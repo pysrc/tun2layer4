@@ -8,6 +8,7 @@ edition = "2021"
 [dependencies]
 
 layer3to4 = { git = "https://github.com/pysrc/layer3to4.git" }
+# layer3to4 = {path = "../layer3to4"}
 log = "0.4"
 
 

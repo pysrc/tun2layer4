@@ -53,12 +53,12 @@ fn route_with_mask(route: String) -> String {
 
 #[cfg(target_os = "windows")]
 pub mod os_tun {
-    use layer3to4::{Layer3Device, Layer3to4};
+    use layer3to4::{dev_run, Layer3Device, TcpWorker, UdpWorker};
     use std::{net::Ipv4Addr, sync::Arc};
 
-    pub fn new(tun_name: String, ip: Ipv4Addr, mask: u8, routes: Option<Vec<String>>) -> Layer3to4 {
+    pub fn new(tun_name: String, ip: Ipv4Addr, mask: u8, routes: Option<Vec<String>>) -> (TcpWorker, UdpWorker) {
         let dev = TunDevice::new(tun_name, ip, mask, routes);
-        Layer3to4::new(dev)
+        dev_run(dev)
     }
 
     pub struct TunDevice {
@@ -130,8 +130,10 @@ pub mod os_tun {
         fn server_forever(
             &mut self,
             unreal_kernel_dst: Ipv4Addr,
-            kernel_src_port: u16,
-            unreal_context: Arc<std::sync::RwLock<layer3to4::UnrealContext>>,
+            tcp_kernel_src_port: u16,
+            tcp_unreal_context: Arc<std::sync::RwLock<layer3to4::UnrealContext>>,
+            udp_kernel_src_port: u16,
+            udp_unreal_context: Arc<std::sync::RwLock<layer3to4::UnrealContext>>,
         ) {
             loop {
                 let mut pkt = match self.session.receive_blocking() {
@@ -146,8 +148,10 @@ pub mod os_tun {
                 let success = self.handle_packet(
                     buffer,
                     unreal_kernel_dst,
-                    kernel_src_port,
-                    unreal_context.clone(),
+                    tcp_kernel_src_port,
+                    tcp_unreal_context.clone(),
+                    udp_kernel_src_port,
+                    udp_unreal_context.clone(),
                 );
                 // 发送处理后的数据
                 if success {
@@ -166,7 +170,7 @@ pub mod os_tun {
 
 #[cfg(target_os = "linux")]
 pub mod os_tun {
-    use layer3to4::{Layer3Device, Layer3to4};
+    use layer3to4::{dev_run, Layer3Device, TcpWorker, UdpWorker};
     use std::{
         io::{Read, Write},
         net::Ipv4Addr,
@@ -207,9 +211,9 @@ pub mod os_tun {
         return mask;
     }
 
-    pub fn new(tun_name: String, ip: Ipv4Addr, mask: u8, routes: Option<Vec<String>>) -> Layer3to4 {
+    pub fn new(tun_name: String, ip: Ipv4Addr, mask: u8, routes: Option<Vec<String>>) -> (TcpWorker, UdpWorker) {
         let dev = TunDevice::new(tun_name, ip, mask, routes);
-        Layer3to4::new(dev)
+        dev_run(dev)
     }
 
     pub struct TunDevice {
@@ -262,8 +266,10 @@ pub mod os_tun {
         fn server_forever(
             &mut self,
             unreal_kernel_dst: Ipv4Addr,
-            kernel_src_port: u16,
-            unreal_context: std::sync::Arc<std::sync::RwLock<layer3to4::UnrealContext>>,
+            tcp_kernel_src_port: u16,
+            tcp_unreal_context: std::sync::Arc<std::sync::RwLock<layer3to4::UnrealContext>>,
+            udp_kernel_src_port: u16,
+            udp_unreal_context: std::sync::Arc<std::sync::RwLock<layer3to4::UnrealContext>>,
         ) {
             let mut buffer = vec![0u8; 4096];
             loop {
@@ -282,8 +288,10 @@ pub mod os_tun {
                 let success = self.handle_packet(
                     &mut buffer[.._len],
                     unreal_kernel_dst,
-                    kernel_src_port,
-                    unreal_context.clone(),
+                    tcp_kernel_src_port,
+                    tcp_unreal_context.clone(),
+                    udp_kernel_src_port,
+                    udp_unreal_context.clone(),
                 );
                 // 发送包
                 if success {

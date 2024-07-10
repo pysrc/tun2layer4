@@ -64,7 +64,7 @@ dependencies = [
 [[package]]
 name = "layer3to4"
 version = "0.1.0"
-source = "git+https://github.com/pysrc/layer3to4.git#55fa00a82efe185f3a18a2745221dcc3dbd26d12"
+source = "git+https://github.com/pysrc/layer3to4.git#a8d6a5faaa06d3dce5d4d62b226ba34474b3db95"
 dependencies = [
  "log",
  "packet",
